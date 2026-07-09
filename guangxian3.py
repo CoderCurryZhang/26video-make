@@ -406,7 +406,6 @@ class FiberOpticModel:
         grp = VGroup()
         ribbon_top = self.create_3d_ribbon(self.pts_clad_top, self.pts_jack_top, 25, True)
         ribbon_bot = self.create_3d_ribbon(self.pts_clad_bot, self.pts_jack_bot, 25, False)
-
         clad_arr = []
         for p in self.pts_clad_top:
             clad_arr.append(p.to_array())
@@ -414,7 +413,6 @@ class FiberOpticModel:
             clad_arr.append(p.to_array())
         cladding_layer = Polygon(*clad_arr, stroke_width=0)
         cladding_layer.set_fill(color="#0B111A", opacity=1.0)
-
         core_arr = []
         for p in self.pts_core_top:
             core_arr.append(p.to_array())
@@ -422,23 +420,18 @@ class FiberOpticModel:
             core_arr.append(p.to_array())
         core_layer = Polygon(*core_arr, stroke_width=0)
         core_layer.set_fill(color="#000000", opacity=1.0)
-
         core_boundary_top = VMobject()
         core_boundary_top.set_points_as_corners([p.to_array() for p in self.pts_core_top])
         core_boundary_top.set_stroke(color="#2A3A4A", width=2.0, opacity=0.8)
-
         core_boundary_bot = VMobject()
         core_boundary_bot.set_points_as_corners([p.to_array() for p in self.pts_core_bot])
         core_boundary_bot.set_stroke(color="#2A3A4A", width=2.0, opacity=0.8)
-
         jack_boundary_top = VMobject()
         jack_boundary_top.set_points_as_corners([p.to_array() for p in self.pts_jack_top])
         jack_boundary_top.set_stroke(color="#113377", width=2.5, opacity=0.7)
-
         jack_boundary_bot = VMobject()
         jack_boundary_bot.set_points_as_corners([p.to_array() for p in self.pts_jack_bot])
         jack_boundary_bot.set_stroke(color="#113377", width=2.5, opacity=0.7)
-
         grp.add(ribbon_top, ribbon_bot, cladding_layer, core_layer, core_boundary_top, core_boundary_bot,
                 jack_boundary_top, jack_boundary_bot)
         return grp
@@ -506,47 +499,11 @@ class BeamGlowRenderer(VGroup):
             poly.set_stroke(color=ld["col"], width=ld["wid"], opacity=ld["op"])
 
 
-class AmbientDustEffect(VGroup):
-    def __init__(self, paths: List[OpticalPath], count: int):
-        super().__init__()
-        self.paths = paths
-        self.count = count
-        self.dots = VGroup()
-        self.meta = []
-        self.add(self.dots)
-        self.init_particles()
-
-    def init_particles(self):
-        colors = ["#FFFFFF", "#FFFFCC", "#FFDD44", "#FF8800", "#FF2200", "#00AAFF"]
-        for _ in range(self.count):
-            d = Dot(radius=random.uniform(0.015, 0.04), color=random.choice(colors))
-            d.set_fill(opacity=0.0)
-            self.dots.add(d)
-            self.meta.append({
-                "path": random.choice(self.paths),
-                "offset": random.uniform(-4.0, 0.0),
-                "speed": random.uniform(0.7, 1.3)
-            })
-
-    def update_particles(self, base_dist: float):
-        for i, dot in enumerate(self.dots):
-            m = self.meta[i]
-            local_dist = (base_dist + m["offset"]) * m["speed"]
-            if local_dist <= 0 or local_dist >= m["path"].total_length:
-                dot.set_fill(opacity=0.0)
-                continue
-            pts = m["path"].extract_subpath(local_dist)
-            if len(pts) > 1:
-                dot.move_to(pts[-1])
-                dot.set_fill(opacity=random.uniform(0.5, 1.0))
-
-
 class PureTotalInternalReflection(Scene):
     def construct(self):
         bg = Rectangle(width=config.frame_width * 2, height=config.frame_height * 2, stroke_width=0)
         bg.set_fill(color="#000000", opacity=1.0)
         self.add(bg)
-
         hud_elements = VGroup()
         hud_pos = [
             (np.array([-6.5, 3.5, 0]), 0),
@@ -561,7 +518,6 @@ class PureTotalInternalReflection(Scene):
             corner.add(l1, l2).move_to(pos).rotate(rot, about_point=pos)
             hud_elements.add(corner)
         self.add(hud_elements)
-
         model = FiberOpticModel()
         visuals = model.create_geometry()
         self.add(visuals)
@@ -571,7 +527,6 @@ class PureTotalInternalReflection(Scene):
         c0 = model.curve.get_point(0.0)
         d0 = model.curve.get_tangent(0.0)
         n0 = model.curve.get_normal(0.0)
-
         emitter_ang = math.atan2(d0.y, d0.x)
         emitter_box = RoundedRectangle(corner_radius=0.15, width=1.0, height=1.6)
         emitter_box.set_stroke(color="#334455", width=2.5)
@@ -579,26 +534,22 @@ class PureTotalInternalReflection(Scene):
         emitter_box.move_to(c0.sub(d0.mul(0.7)).to_array())
         emitter_box.rotate(emitter_ang)
         self.add(emitter_box)
-
         for r_size in [0.65, 0.85, 1.05]:
             arc = Arc(radius=r_size, start_angle=-math.pi / 3, angle=math.pi * 2 / 3,
                       arc_center=c0.sub(d0.mul(0.7)).to_array())
             arc.rotate(emitter_ang, about_point=c0.sub(d0.mul(0.7)).to_array())
             arc.set_stroke(color="#112233", width=2)
             self.add(arc)
-
         emitter_lens = Line(ORIGIN, ORIGIN)
         lens_p1 = c0.add(n0.mul(0.4)).sub(d0.mul(0.2)).to_array()
         lens_p2 = c0.sub(n0.mul(0.4)).sub(d0.mul(0.2)).to_array()
         emitter_lens.set_points_as_corners([lens_p1, lens_p2])
         emitter_lens.set_stroke(color="#2288FF", width=5.0, opacity=0.9)
         self.add(emitter_lens)
-
         emitter_glow = Line(ORIGIN, ORIGIN)
         emitter_glow.set_points_as_corners([lens_p1, lens_p2])
         emitter_glow.set_stroke(color="#55AAFF", width=15.0, opacity=0.3)
         self.add(emitter_glow)
-
         ray_params = [
             (0.0, 0.46),
             (0.0, -0.46),
@@ -608,7 +559,6 @@ class PureTotalInternalReflection(Scene):
             (0.1, 0.15),
             (-0.1, -0.15)
         ]
-
         for offset, ang in ray_params:
             start_p = c0.add(n0.mul(offset)).sub(d0.mul(0.3))
             start_d = d0.rotate_z(ang)
@@ -618,18 +568,12 @@ class PureTotalInternalReflection(Scene):
             paths.append(p)
             if p.total_length > max_len:
                 max_len = p.total_length
-
         if max_len < 1.0:
             max_len = 25.0
-
         beams = VGroup()
         for p in paths:
             beams.add(BeamGlowRenderer(p))
         self.add(beams)
-
-        dust = AmbientDustEffect(paths, 480)
-        self.add(dust)
-
         timer = ValueTracker(0.0)
 
         def master_update(mob):
@@ -637,7 +581,6 @@ class PureTotalInternalReflection(Scene):
             current_dist = max_len * (val / 15.0)
             for b in beams:
                 b.set_distance(current_dist)
-            dust.update_particles(current_dist)
 
         beams.add_updater(master_update)
         self.play(timer.animate.set_value(18.0), run_time=12.0, rate_func=linear)
